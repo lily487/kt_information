@@ -3,8 +3,6 @@
 #include<stdlib.h>
 #include<time.h>
 
-#define MAX_tweet 140
-
 // それぞれのデータごとに分割する
 void write_tweet(FILE *fp, char *tweet_buffer)
 {
@@ -16,7 +14,7 @@ void write_tweet(FILE *fp, char *tweet_buffer)
 
 int main(void)
 {
-    // 今日の日付を取得
+    // 今日の日付を取得する
     time_t currentTime = time(NULL);
     struct tm *localTime = localtime(&currentTime);
     char today[20];
@@ -62,6 +60,7 @@ int main(void)
         char *token;
         int a=0;
         char *a1=NULL,*a2=NULL, *a5=NULL, *a6=NULL;
+        char last_output[512]="";
 
         token=strtok(buffer,",");
 
@@ -97,18 +96,16 @@ int main(void)
             // a2の中で今日の日付が含まれているものを抽出する
             if(a2&&strstr(a2,today))  
             {
-              
                 char today_data[512];
                 sprintf(today_data,"【ライブ】\n%s\n@%s\n%s\n",a1,a5,a6);
-            
-                // 文字数が制限を超えたら一度書き出す
-                if(strlen(tweet_buffer)+strlen(today_data)>MAX_tweet)
+
+                if(strcmp(today_data,last_output)==0)
                 {
-                    write_tweet(fp4,tweet_buffer);
-                    strcpy(tweet_buffer,"");
+                    continue;
                 }
 
-                strcat(tweet_buffer,today_data);
+                write_tweet(fp4,today_data);
+                strcpy(last_output,today_data);
             }
         
           
@@ -128,11 +125,13 @@ int main(void)
 
     while(fgets(buffer,sizeof(buffer),fp2))
     {
-       char *token;
-       int b=0;
-       char *b1=NULL, *b2=NULL, *b3=NULL, *b4=NULL, *b5=NULL, *b6=NULL;
-       token=strtok(buffer,",");
-       while(token!=NULL)
+        char *token;
+        int b=0;
+        char *b1=NULL, *b2=NULL, *b3=NULL, *b4=NULL, *b5=NULL, *b6=NULL;
+        char last_output[512]="";
+        token=strtok(buffer,",");
+
+        while(token!=NULL)
         {
             b++;
             if(b==1)
@@ -166,23 +165,22 @@ int main(void)
             }
 
             token=strtok(NULL,",");
-       }
+        }
 
     
             if(b2&&strstr(b2,today))
             {
-
                 char today_data[512];
-                sprintf(today_data,"【メディア】\n%s\n%s-%s\n@%s\n※%s\n",b1,b3,b4,b5,b6);
-            
+                sprintf(today_data,"【メディア】\n%s\n%s-%s\n@%s\n※%s\n", b1, b3, b4, b5, b6);
 
-                if(strlen(tweet_buffer)+strlen(today_data)>MAX_tweet)
+                if(strcmp(today_data,last_output)==0)
                 {
-                    write_tweet(fp4,tweet_buffer);
-                    strcpy(tweet_buffer,"");
+                    continue;
                 }
+
+                write_tweet(fp4,today_data);
+                strcpy(last_output,today_data);
                 
-                strcat(tweet_buffer,today_data);
             }
         
     }
@@ -190,24 +188,13 @@ int main(void)
     // レギュラー出演の情報
     if(localTime->tm_wday==3)
     {
-        char reg[256]="【メディア】≪レギュラー≫\nこれ余談なんですけど…\n@ABCテレビ\n23:10-24:17\n※イワクラさんのみ、ナレーターで出演\n";
-        if(strlen(tweet_buffer)+strlen(reg)>MAX_tweet)
-        {
-            write_tweet(fp4,tweet_buffer);
-            strcpy(tweet_buffer,"");
-        }
-        strcat(tweet_buffer,reg);
+        write_tweet(fp4,"【メディア】≪レギュラー≫\nこれ余談なんですけど…\n@ABCテレビ\n23:10-24:17\n※イワクラさんのみ、ナレーターで出演\n");
+
     }
     if(localTime->tm_wday==0)
     {
-        char reg[256]="【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n";
-        if(strlen(tweet_buffer)+strlen(reg)>MAX_tweet)
-        {
-            write_tweet(fp4,tweet_buffer);
-            strcpy(tweet_buffer,"");
-        }
-        strcat(tweet_buffer,reg);
-
+        write_tweet(fp4,"【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n");
+      
     }
         
     
@@ -226,7 +213,9 @@ int main(void)
         char *token;
         int c=0;
         char *c1=NULL, *c2=NULL,*c3=NULL, *c5=NULL, *c6=NULL;
+        char last_output[512]="";
         token=strtok(buffer,",");
+
         while(token!=NULL)
         {
             c++;
@@ -262,15 +251,15 @@ int main(void)
             if(c2&&strstr(c2,today))
             {
                 char today_data[512];
-                sprintf(today_data,"【その他】\n%s\n@%s\n%s-\n※%s\n",c1,c5,c3,c6);
-            
+                sprintf(tweet_buffer,"【その他】\n%s\n@%s\n%s-\n※%s\n",c1,c5,c3,c6);
+                
+                if(strcmp(today_data,last_output)==0)
+                {
+                    continue;
+                }
 
-            if(strlen(tweet_buffer)+strlen(today_data)>MAX_tweet)
-            {
-                write_tweet(fp4,tweet_buffer);
-                strcpy(tweet_buffer,"");
-            }
-            strcat(tweet_buffer,today_data);
+                write_tweet(fp4,today_data);
+                strcpy(last_output,today_data);
             }
 
     
