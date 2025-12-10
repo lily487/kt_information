@@ -31,6 +31,7 @@ int main(void)
     FILE *fp1,*fp2,*fp3,*fp4;
     char buffer[1024];
     char tweet_buffer[8192]="";
+    int live=0;
 
     // データを書き込むファイルを開く
     fp4=fopen("info_tweet.txt","w");
@@ -67,28 +68,31 @@ int main(void)
         // 区切られている文字列を順番に処理
         while(token!=NULL)
         {
-            a++;
-          
-             if(a==1)
+            token[strcspn(token,"\r\n")]='\0';
+            if(strlen(token)>0)
             {
-                a1=token;
-            }
+                a++;
+            
+                if(a==1)
+                {
+                    a1=token;
+                }
 
-              if(a==2)
-            {
-                a2=token;
-            }
+                if(a==2)
+                {
+                    a2=token;
+                }
 
-            if(a==5)
-            {
-                a5=token;
-            }
+                if(a==5)
+                {
+                    a5=token;
+                }
 
-            if(a==6)
-            {
-                a6=token;
+                if(a==6)
+                {
+                    a6=token;
+                }
             }
-
             // 次の文字列を取得する
             token=strtok(NULL,",");
         }
@@ -97,7 +101,16 @@ int main(void)
             if(a2&&strstr(a2,today))  
             {
                 char today_data[512];
-                sprintf(today_data,"【ライブ】\n%s\n@%s\n%s\n",a1,a5,a6);
+                if(!live)
+                {
+                    sprintf(today_data,"【ライブ】\n");
+                    live=1;
+                }
+                else
+                {
+                    today_data[0]='\0';
+                }
+                sprintf(today_data+strlen(today_data),"%s\n@%s\n%s\n",a1,a5,a6);
 
                 if(strcmp(today_data,last_output)==0)
                 {
@@ -193,7 +206,12 @@ int main(void)
     }
     if(localTime->tm_wday==0)
     {
-        write_tweet(fp4,"【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n");
+        write_tweet(fp4,"【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n\n\n華丸丼と大吉麺\n@テレビ朝日\n13:25-13:55\n※中野さんのみ、ナレーターで出演\n");
+      
+    }
+    if(localTime->tm_wday==1)
+    {
+        write_tweet(fp4,"【メディア】≪レギュラー≫\nコント･デ･ンガナ\n@ABCテレビ\n24:00-24:30\n");
       
     }
         
@@ -247,11 +265,16 @@ int main(void)
             token=strtok(NULL,",");
 
         }
-        
+            if(c2)
+            {
+                // 改行コードを削除
+                 c2[strcspn(c2, "\r\n")] = '\0';
+            }
+ 
             if(c2&&strstr(c2,today))
             {
                 char today_data[512];
-                sprintf(tweet_buffer,"【その他】\n%s\n@%s\n%s-\n※%s\n",c1,c5,c3,c6);
+                sprintf(today_data,"【その他】\n%s\n@%s\n%s-\n※%s\n",c1,c5,c3,c6);
                 
                 if(strcmp(today_data,last_output)==0)
                 {
