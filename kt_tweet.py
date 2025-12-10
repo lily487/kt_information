@@ -1,14 +1,11 @@
 import tweepy
-from dotenv import load_dotenv
 import os
 
-# .env読み込み
-load_dotenv()
-
-API_KEY = os.getenv("API_KEY")
-API_SECRET = os.getenv("API_SECRET")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
-ACCESS_SECRET = os.getenv("ACCESS_SECRET")
+# GitHub Secrets から環境変数として読み込む
+API_KEY = os.getenv("APIKEY")
+API_SECRET = os.getenv("APISECRET")
+ACCESS_TOKEN = os.getenv("ACCESSTOKEN")
+ACCESS_SECRET = os.getenv("ACCESSTOKENSECRET")
 
 auth = tweepy.OAuth1UserHandler(
     API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET
@@ -27,7 +24,7 @@ with open("info_tweet.txt", "r", encoding="utf-8") as f:
         if not part:
             continue
 
-        # 140文字以内
+        # 140文字以内に分割
         if len(current_tweet) + len(part) + 1 < 140:
             current_tweet += ("\n" if current_tweet else "") + part
         else:
@@ -37,7 +34,7 @@ with open("info_tweet.txt", "r", encoding="utf-8") as f:
     if current_tweet:
         tweets.append(current_tweet)
 
-# 実際にツイートする
+# 実際にツイートする（スレッド形式）
 previous_tweet = None
 for tweet in tweets:
     tweet = tweet.strip()
