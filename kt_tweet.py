@@ -13,10 +13,12 @@ print("DEBUG",
       ACCESS_TOKEN is not None,
       ACCESS_SECRET is not None)
 
-auth = tweepy.OAuth1UserHandler(
-    API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET
+client = tweepy.Client(
+    consumer_key=API_KEY,
+    consumer_secret=API_SECRET,
+    access_token=ACCESS_TOKEN,
+    access_token_secret=ACCESS_SECRET
 )
-api = tweepy.API(auth)
 
 tweets = []
 current_tweet = ""
@@ -48,12 +50,12 @@ for tweet in tweets:
         continue
 
     if previous_tweet:
-        previous_tweet = api.update_status(
-            status=tweet,
-            in_reply_to_status_id=previous_tweet.id,
-            auto_populate_reply_metadata=True
+        response = client.create_tweet(
+            text=tweet,
+            in_reply_to_tweet_id=previous_tweet
         )
     else:
-        previous_tweet = api.update_status(status=tweet)
+        response = client.create_tweet(text=tweet)
+        previous_tweet = response.data['id'] 
 
 print("all tweet sent!")
