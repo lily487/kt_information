@@ -7,7 +7,7 @@ API_SECRET = os.getenv("APIKEYSECRET")
 ACCESS_TOKEN = os.getenv("ACCESSTOKEN")
 ACCESS_SECRET = os.getenv("ACCESSTOKENSECRET")
 
-print("DEBUG API_KEY:", API_KEY)
+# print("DEBUG API_KEY:", API_KEY)
 
 auth = tweepy.OAuth1UserHandler(
     API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET
