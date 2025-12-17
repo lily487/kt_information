@@ -2,8 +2,8 @@ name: Auto Tweet
 
 on:
   workflow_dispatch:        # 手動実行
-#   schedule:
-#     - cron: "0 * * * *"     # 毎時0分に実行（必要なら変えてOK）
+  schedule:
+    - cron: "0 0 * * *"     # 毎時0分に実行（必要なら変えてOK）
 
 jobs:
   tweet:
