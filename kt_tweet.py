@@ -47,13 +47,13 @@ for tweet in tweets:
     if not tweet:
         continue
 
-    # if previous_tweet:
-    #     previous_tweet = api.update_status(
-    #         status=tweet,
-    #         in_reply_to_status_id=previous_tweet.id,
-    #         auto_populate_reply_metadata=True
-    #     )
-    # else:
-    #     previous_tweet = api.update_status(status=tweet)
+    if previous_tweet:
+        previous_tweet = api.update_status(
+            status=tweet,
+            in_reply_to_status_id=previous_tweet.id,
+            auto_populate_reply_metadata=True
+        )
+    else:
+        previous_tweet = api.update_status(status=tweet)
 
 print("all tweet sent!")
