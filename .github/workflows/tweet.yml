@@ -24,7 +24,7 @@ jobs:
       - name: Run tweet script
         env:
           APIKEY: ${{ secrets.APIKEY }}
-          APISECRET: ${{ secrets.APIKEYSECRET }}
+          APIKEYSECRET: ${{ secrets.APIKEYSECRET }}
           ACCESSTOKEN: ${{ secrets.ACCESSTOKEN }}
           ACCESSTOKENSECRET: ${{ secrets.ACCESSTOKENSECRET }}
         run: python kt_tweet.py
