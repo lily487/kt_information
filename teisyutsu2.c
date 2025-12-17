@@ -32,6 +32,7 @@ int main(void)
     char buffer[1024];
     char tweet_buffer[8192]="";
     int live=0;
+    int found_any=0;
 
     // データを書き込むファイルを開く
     fp4=fopen("info_tweet.txt","w");
@@ -118,6 +119,7 @@ int main(void)
                 }
 
                 write_tweet(fp4,today_data);
+                found_any=1;
                 strcpy(last_output,today_data);
             }
         
@@ -184,7 +186,7 @@ int main(void)
             if(b2&&strstr(b2,today))
             {
                 char today_data[512];
-                sprintf(today_data,"【メディア】\n%s\n%s-%s\n@%s\n※%s\n", b1, b3, b4, b5, b6);
+                sprintf(today_data,"【メディア】\n%s\n%s-%s\n@%s\n%s\n", b1, b3, b4, b5, b6);
 
                 if(strcmp(today_data,last_output)==0)
                 {
@@ -192,6 +194,7 @@ int main(void)
                 }
 
                 write_tweet(fp4,today_data);
+                found_any=1;
                 strcpy(last_output,today_data);
                 
             }
@@ -202,17 +205,18 @@ int main(void)
     if(localTime->tm_wday==3)
     {
         write_tweet(fp4,"【メディア】≪レギュラー≫\nこれ余談なんですけど…\n@ABCテレビ\n23:10-24:17\n※イワクラさんのみ、ナレーターで出演\n");
+        found_any=1;
 
     }
     if(localTime->tm_wday==0)
     {
         write_tweet(fp4,"【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n\n\n華丸丼と大吉麺\n@テレビ朝日\n13:25-13:55\n※中野さんのみ、ナレーターで出演\n");
-      
+        found_any=1;
     }
     if(localTime->tm_wday==1)
     {
         write_tweet(fp4,"【メディア】≪レギュラー≫\nコント･デ･ンガナ\n@ABCテレビ\n24:00-24:30\n");
-      
+        found_any=1;
     }
         
     
@@ -274,7 +278,7 @@ int main(void)
             if(c2&&strstr(c2,today))
             {
                 char today_data[512];
-                sprintf(today_data,"【その他】\n%s\n@%s\n%s-\n※%s\n",c1,c5,c3,c6);
+                sprintf(today_data,"【その他】\n%s\n@%s\n%s-\n%s\n",c1,c5,c3,c6);
                 
                 if(strcmp(today_data,last_output)==0)
                 {
@@ -282,13 +286,21 @@ int main(void)
                 }
 
                 write_tweet(fp4,today_data);
+                found_any=1;
                 strcpy(last_output,today_data);
             }
 
     
     }
 
-    write_tweet(fp4,tweet_buffer);
+    if(found_any>0)
+    {
+        write_tweet(fp4,tweet_buffer);
+    }
+    else
+    {
+        fprintf(fp4,"本日の予定はありません。\n");
+    }
 
 
     fclose(fp1);
