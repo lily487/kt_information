@@ -3,9 +3,11 @@ import os
 
 # GitHub Secrets から環境変数として読み込む
 API_KEY = os.getenv("APIKEY")
-API_SECRET = os.getenv("APISECRET")
+API_SECRET = os.getenv("APIKEYSECRET")
 ACCESS_TOKEN = os.getenv("ACCESSTOKEN")
 ACCESS_SECRET = os.getenv("ACCESSTOKENSECRET")
+
+print("DEBUG API_KEY:", API_KEY)
 
 auth = tweepy.OAuth1UserHandler(
     API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET
@@ -41,13 +43,13 @@ for tweet in tweets:
     if not tweet:
         continue
 
-    if previous_tweet:
-        previous_tweet = api.update_status(
-            status=tweet,
-            in_reply_to_status_id=previous_tweet.id,
-            auto_populate_reply_metadata=True
-        )
-    else:
-        previous_tweet = api.update_status(status=tweet)
+    # if previous_tweet:
+    #     previous_tweet = api.update_status(
+    #         status=tweet,
+    #         in_reply_to_status_id=previous_tweet.id,
+    #         auto_populate_reply_metadata=True
+    #     )
+    # else:
+    #     previous_tweet = api.update_status(status=tweet)
 
 print("all tweet sent!")
