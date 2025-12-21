@@ -8,6 +8,10 @@ on:
 jobs:
   tweet:
     runs-on: ubuntu-latest
+    
+    # 書き込み権限を明示的に付与
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -26,6 +30,14 @@ jobs:
 
       - name: Generate today's info_tweet.txt
         run: ./make_tweet
+
+      # --- 追加：生成されたファイルをリポジトリに保存（プッシュ）する ---
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update info_tweet.txt [skip ci]"
+          file_pattern: 'info_tweet.txt'
+      # ----------------------------------------------------------
 
       - name: Set up Python
         uses: actions/setup-python@v4
