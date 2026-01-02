@@ -51,8 +51,8 @@ for part in parts:
 
     # 現在のブロックにこのパーツを足しても140文字以内かチェック
     # +1 は区切りの改行分
-    if len(current_block) + len(part) + 1 <= 140:
-        current_block += ("\n" if current_block else "") + part
+    if len(current_block) + len(part) + 2 <= 140:
+        current_block += ("\n\n" if current_block else "") + part
     else:
         # 超えるなら今のブロックを確定させて、新しいブロックを開始
         final_tweets.append(current_block)

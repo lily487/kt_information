@@ -1,311 +1,236 @@
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<time.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <locale.h>
 
-// それぞれのデータごとに分割する
-void write_tweet(FILE *fp, char *tweet_buffer)
+// ツイートを区切って書き込む
+void write_tweet(FILE *fp, const char *text)
 {
-    if(strlen(tweet_buffer)>0)
+    if (text && strlen(text) > 0)
     {
-        fprintf(fp,"%s\n---\n",tweet_buffer);
+        fprintf(fp, "%s\n---\n", text);
     }
 }
 
 int main(void)
 {
-    // 今日の日付を取得する
+    setlocale(LC_ALL, "");
+
+    /* 今日の日付取得 */
     time_t currentTime = time(NULL);
     struct tm *localTime = localtime(&currentTime);
     char today[20];
 
-    sprintf(today,"%d/%d/%d",
-           localTime->tm_year + 1900,
+    sprintf(today, "%d/%d/%d",
+            localTime->tm_year + 1900,
             localTime->tm_mon + 1,
             localTime->tm_mday);
 
-            printf("today is %s\n",today);
+    printf("today is %s\n", today);
 
-
-
-    FILE *fp1,*fp2,*fp3,*fp4;
+    FILE *fp1, *fp2, *fp3, *fp4;
     char buffer[1024];
-    char tweet_buffer[8192]="";
-    int live=0;
-    int found_any=0;
+    int found_any = 0;
+    int live = 0;
 
-    // データを書き込むファイルを開く
-    fp4=fopen("info_tweet.txt","w");
-    if(fp4==NULL)
+    /* 出力ファイル */
+    fp4 = fopen("info_tweet.txt", "w");
+    if (!fp4)
     {
-        printf("can't open file info_tweet.txt\n");
+        printf("can't open info_tweet.txt\n");
         exit(1);
     }
 
-    // 題名をまとめる
-    fprintf(fp4,"🐸今日(%s)の蛙亭🐸\n",today);
+    fprintf(fp4, "🐸今日(%s)の蛙亭🐸\n", today);
 
-    // 劇場情報をまとめる
-    fp1=fopen("theater.csv","r");
-
-    if(fp1==NULL)
+    /* ================= 劇場情報 ================= */
+    fp1 = fopen("theater2026.csv", "r");
+    if (!fp1)
     {
-        printf("can't open file theater.csv\n");
+        printf("can't open theater2026.csv\n");
         exit(1);
     }
-    // ファイルから一行読み込む
-    fgets(buffer,sizeof(buffer),fp1);
 
-    // ファイルの終わりまで繰り返す
-    while(fgets(buffer,sizeof(buffer),fp1))
+    fgets(buffer, sizeof(buffer), fp1); // ヘッダ読み飛ばし
+
+    char last_output[512] = "";
+
+    while (fgets(buffer, sizeof(buffer), fp1))
     {
         char *token;
-        int a=0;
-        char *a1=NULL,*a2=NULL, *a5=NULL, *a6=NULL;
-        char last_output[512]="";
+        int col = 0;
+        char *title = NULL, *date = NULL, *place = NULL, *time = NULL;
 
-        token=strtok(buffer,",");
-
-        // 区切られている文字列を順番に処理
-        while(token!=NULL)
+        token = strtok(buffer, ",");
+        while (token)
         {
-            token[strcspn(token,"\r\n")]='\0';
-            if(strlen(token)>0)
-            {
-                a++;
-            
-                if(a==1)
-                {
-                    a1=token;
-                }
+            token[strcspn(token, "\r\n")] = '\0';
+            col++;
 
-                if(a==2)
-                {
-                    a2=token;
-                }
+            if (col == 1) title = token;
+            if (col == 2) date  = token;
+            if (col == 5) place = token;
+            if (col == 6) time  = token;
 
-                if(a==5)
-                {
-                    a5=token;
-                }
-
-                if(a==6)
-                {
-                    a6=token;
-                }
-            }
-            // 次の文字列を取得する
-            token=strtok(NULL,",");
-        }
-            
-            // a2の中で今日の日付が含まれているものを抽出する
-            if(a2&&strstr(a2,today))  
-            {
-                char today_data[512];
-                if(!live)
-                {
-                    sprintf(today_data,"【ライブ】\n");
-                    live=1;
-                }
-                else
-                {
-                    today_data[0]='\0';
-                }
-                sprintf(today_data+strlen(today_data),"%s\n@%s\n%s\n",a1,a5,a6);
-
-                if(strcmp(today_data,last_output)==0)
-                {
-                    continue;
-                }
-
-                write_tweet(fp4,today_data);
-                found_any=1;
-                strcpy(last_output,today_data);
-            }
-        
-          
-        
-    }
-
-
-    // メディア情報をまとめる
-    fp2=fopen("kaeruTV.csv","r");
-    if(fp2==NULL)
-    {
-        printf("can't open file kaeruTV.csv\n");
-        exit(1);
-    }
-
-    fgets(buffer,sizeof(buffer),fp2);
-
-    while(fgets(buffer,sizeof(buffer),fp2))
-    {
-        char *token;
-        int b=0;
-        char *b1=NULL, *b2=NULL, *b3=NULL, *b4=NULL, *b5=NULL, *b6=NULL;
-        char last_output[512]="";
-        token=strtok(buffer,",");
-
-        while(token!=NULL)
-        {
-            b++;
-            if(b==1)
-            {
-                b1=token;
-            }
-
-            if(b==2)
-            {
-                b2=token;
-            }
-
-            if(b==3)
-            {
-                b3=token;
-            }
-
-            if(b==4)
-            {
-                b4=token;
-            }
-
-            if(b==5)
-            {
-                b5=token;
-            }
-
-            if(b==6)
-            {
-                b6=token;
-            }
-
-            token=strtok(NULL,",");
+            token = strtok(NULL, ",");
         }
 
-    
-            if(b2&&strstr(b2,today))
-            {
-                char today_data[512];
-                sprintf(today_data,"【メディア】\n%s\n%s-%s\n@%s\n%s\n", b1, b3, b4, b5, b6);
-
-                if(strcmp(today_data,last_output)==0)
-                {
-                    continue;
-                }
-
-                write_tweet(fp4,today_data);
-                found_any=1;
-                strcpy(last_output,today_data);
-                
-            }
-        
-    }
-
-    // レギュラー出演の情報
-    if(localTime->tm_wday==3)
-    {
-        write_tweet(fp4,"【メディア】≪レギュラー≫\nこれ余談なんですけど…\n@ABCテレビ\n23:10-24:17\n※イワクラさんのみ、ナレーターで出演\n");
-        found_any=1;
-
-    }
-    if(localTime->tm_wday==0)
-    {
-        write_tweet(fp4,"【メディア】≪レギュラー≫\nポケモンとどこ行く!?\n@テレビ東京\n7:30-8:30\n※中野さんのみ、ナレーターで出演\n\n\n華丸丼と大吉麺\n@テレビ朝日\n13:25-13:55\n※中野さんのみ、ナレーターで出演\n");
-        found_any=1;
-    }
-    if(localTime->tm_wday==1)
-    {
-        write_tweet(fp4,"【メディア】≪レギュラー≫\nコント･デ･ンガナ\n@ABCテレビ\n24:00-24:30\n");
-        found_any=1;
-    }
-        
-    
-
-    // その他の情報をまとめる
-    fp3=fopen("other.csv","r");
-    if(fp3==NULL)
-    {
-        printf("can't open file other.csv\n");
-        exit(1);
-    }
-
-    fgets(buffer,sizeof(buffer),fp3);
-    while(fgets(buffer,sizeof(buffer),fp3))
-    {
-        char *token;
-        int c=0;
-        char *c1=NULL, *c2=NULL,*c3=NULL, *c5=NULL, *c6=NULL;
-        char last_output[512]="";
-        token=strtok(buffer,",");
-
-        while(token!=NULL)
+        if (date && strcmp(date, today) == 0)
         {
-            c++;
-            if(c==1)
+            char out[512] = "";
+
+            if (!live)
             {
-                c1=token;
+                strcat(out, "【ライブ】\n");
+                live = 1;
             }
 
-            if(c==2)
+            sprintf(out + strlen(out), "%s\n@%s\n%s\n",
+                    title, place, time);
+
+            if (strcmp(out, last_output) != 0)
             {
-                c2=token;
+                write_tweet(fp4, out);
+                strcpy(last_output, out);
+                found_any = 1;
             }
-
-            if(c==3)
-            {
-                c3=token;
-            }
-
-            if(c==5)
-            {
-                c5=token;
-            }
-
-            if(c==6)
-            {
-                c6=token;
-            }
-
-            token=strtok(NULL,",");
-
         }
-            if(c2)
-            {
-                // 改行コードを削除
-                 c2[strcspn(c2, "\r\n")] = '\0';
-            }
- 
-            if(c2&&strstr(c2,today))
-            {
-                char today_data[512];
-                sprintf(today_data,"【その他】\n%s\n@%s\n%s-\n%s\n",c1,c5,c3,c6);
-                
-                if(strcmp(today_data,last_output)==0)
-                {
-                    continue;
-                }
-
-                write_tweet(fp4,today_data);
-                found_any=1;
-                strcpy(last_output,today_data);
-            }
-
-    
     }
-
-    if(found_any>0)
-    {
-        write_tweet(fp4,tweet_buffer);
-    }
-    else
-    {
-        fprintf(fp4,"本日の予定はありません。\n");
-    }
-
-
     fclose(fp1);
+
+    /* ================= メディア情報 ================= */
+    fp2 = fopen("kaeruTV.csv", "r");
+    if (!fp2)
+    {
+        printf("can't open kaeruTV.csv\n");
+        exit(1);
+    }
+
+    fgets(buffer, sizeof(buffer), fp2);
+    strcpy(last_output, "");
+
+    while (fgets(buffer, sizeof(buffer), fp2))
+    {
+        char *token;
+        int col = 0;
+        char *title = NULL, *date = NULL, *from = NULL, *to = NULL, *station = NULL, *note = NULL;
+
+        token = strtok(buffer, ",");
+        while (token)
+        {
+            token[strcspn(token, "\r\n")] = '\0';
+            col++;
+
+            if (col == 1) title   = token;
+            if (col == 2) date    = token;
+            if (col == 3) from    = token;
+            if (col == 4) to      = token;
+            if (col == 5) station = token;
+            if (col == 6) note    = token;
+
+            token = strtok(NULL, ",");
+        }
+
+        if (date && strcmp(date, today) == 0)
+        {
+            char out[512];
+            sprintf(out, "【メディア】\n%s\n%s-%s\n@%s\n%s\n",
+                    title, from, to, station, note);
+
+            if (strcmp(out, last_output) != 0)
+            {
+                write_tweet(fp4, out);
+                strcpy(last_output, out);
+                found_any = 1;
+            }
+        }
+    }
     fclose(fp2);
+
+    /* ================= レギュラー ================= */
+    if (localTime->tm_wday == 3)
+    {
+        write_tweet(fp4,
+            "【メディア】≪レギュラー≫\n"
+            "これ余談なんですけど…\n"
+            "@ABCテレビ\n23:10-24:17\n"
+            "※イワクラさんのみ\n");
+        found_any = 1;
+    }
+
+    if (localTime->tm_wday == 0)
+    {
+        write_tweet(fp4,
+            "【メディア】≪レギュラー≫\n"
+            "ポケモンとどこ行く!?\n"
+            "@テレビ東京\n7:30-8:30\n"
+            "※中野さんのみ\n");
+        found_any = 1;
+    }
+
+    if (localTime->tm_wday == 1)
+    {
+        write_tweet(fp4,
+            "【メディア】≪レギュラー≫\n"
+            "コント･デ･ンガナ\n"
+            "@ABCテレビ\n24:00-24:30\n");
+        found_any = 1;
+    }
+
+    /* ================= その他 ================= */
+    fp3 = fopen("other.csv", "r");
+    if (!fp3)
+    {
+        printf("can't open other.csv\n");
+        exit(1);
+    }
+
+    fgets(buffer, sizeof(buffer), fp3);
+    strcpy(last_output, "");
+
+    while (fgets(buffer, sizeof(buffer), fp3))
+    {
+        char *token;
+        int col = 0;
+        char *title = NULL, *date = NULL, *content = NULL, *place = NULL, *note = NULL;
+
+        token = strtok(buffer, ",");
+        while (token)
+        {
+            token[strcspn(token, "\r\n")] = '\0';
+            col++;
+
+            if (col == 1) title   = token;
+            if (col == 2) date    = token;
+            if (col == 3) content = token;
+            if (col == 5) place   = token;
+            if (col == 6) note    = token;
+
+            token = strtok(NULL, ",");
+        }
+
+        if (date && strcmp(date, today) == 0)
+        {
+            char out[512];
+            sprintf(out, "【その他】\n%s\n@%s\n%s\n%s\n",
+                    title, place, content, note);
+
+            if (strcmp(out, last_output) != 0)
+            {
+                write_tweet(fp4, out);
+                strcpy(last_output, out);
+                found_any = 1;
+            }
+        }
+    }
     fclose(fp3);
+
+    if (!found_any)
+    {
+        fprintf(fp4, "本日の予定はありません。\n");
+    }
+
     fclose(fp4);
-  
+    return 0;
 }
