@@ -88,16 +88,13 @@
 import tweepy
 import os
 
-# ===== 設定 =====
-MAX_LEN = 140
-
-# GitHub Secrets から環境変数として読み込む
+# ===== 認証情報 =====
 API_KEY = os.getenv("APIKEY")
 API_SECRET = os.getenv("APIKEYSECRET")
 ACCESS_TOKEN = os.getenv("ACCESSTOKEN")
 ACCESS_SECRET = os.getenv("ACCESSTOKENSECRET")
 
-print("DEBUG",
+print("DEBUG AUTH:",
       API_KEY is not None,
       API_SECRET is not None,
       ACCESS_TOKEN is not None,
@@ -110,57 +107,58 @@ client = tweepy.Client(
     access_token_secret=ACCESS_SECRET
 )
 
-# info_tweet.txt を読み込む
+# ===== ファイル読み込み =====
 if not os.path.exists("info_tweet.txt"):
     print("file not found")
     exit(0)
 
 with open("info_tweet.txt", "r", encoding="utf-8") as f:
-    parts = [p.strip() for p in f.read().split("---") if p.strip()]
+    parts = f.read().split("---")
 
-# ===== ここが本体ロジック =====
-
-header = parts[0]          # 🐸今日〜 + 【ライブ】
-live_parts = parts[1:]     # 各ライブ
-
+# ===== ツイート生成 =====
 final_tweets = []
+current_block = ""
 
-# 最初のツイートはヘッダ入り
-current = header
-
-for part in live_parts:
-    # ライブ1本自体がMAX超えた場合（保険）
-    if len(part) > MAX_LEN:
-        # 先に今までの内容を確定
-        if current:
-            final_tweets.append(current)
-            current = ""
-
-        # 強制分割（基本起きない想定）
-        for i in range(0, len(part), MAX_LEN):
-            final_tweets.append(part[i:i + MAX_LEN])
+for part in parts:
+    part = part.strip()
+    if not part:
         continue
 
-    # 今のツイートにこのライブを足せるか？
-    candidate = current + "\n\n" + part
+    # 単体で140字超えたら強制分割
+    if len(part) > 140:
+        if current_block:
+            final_tweets.append(current_block)
+            current_block = ""
 
-    if len(candidate) <= MAX_LEN:
-        # まだ入る → 同じツイートに詰める
-        current = candidate
+        for i in range(0, len(part), 140):
+            final_tweets.append(part[i:i+140])
+        continue
+
+    # 2つ目以降は「空行」を入れる
+    if len(current_block) + len(part) + 2 <= 140:
+        current_block += ("\n\n" if current_block else "") + part
     else:
-        # 入らない → 今のツイート確定、次はライブから
-        final_tweets.append(current)
-        current = part
+        final_tweets.append(current_block)
+        current_block = part
 
-# 残りを追加
-if current:
-    final_tweets.append(current)
+if current_block:
+    final_tweets.append(current_block)
 
-# ===== ツイート投稿（スレッド） =====
+print("===== GENERATED TWEETS =====")
+for i, t in enumerate(final_tweets):
+    print(f"[{i+1}] LEN={len(t)}")
+    print(t)
+    print("-----")
 
+# ===== 投稿処理（完全デバッグ付き） =====
 previous_tweet_id = None
 
-for tweet_text in final_tweets:
+for i, tweet_text in enumerate(final_tweets):
+    print("==========")
+    print(f"TWEET {i+1}")
+    print(tweet_text)
+    print(f"LEN = {len(tweet_text)}")
+
     try:
         if previous_tweet_id:
             response = client.create_tweet(
@@ -170,13 +168,16 @@ for tweet_text in final_tweets:
         else:
             response = client.create_tweet(text=tweet_text)
 
+        print("RESPONSE:", response)
+
+        if response.data is None:
+            raise Exception("Tweet failed (no data)")
+
         previous_tweet_id = response.data["id"]
-        print(f"Sent: {tweet_text.splitlines()[0]}")
+        print("POSTED ID:", previous_tweet_id)
 
     except Exception as e:
-        print("Error while tweeting:")
-        print(tweet_text)
-        print(e)
+        print("ERROR:", e)
         break
 
-print("All tweets sent!")
+print("All tweets processed.")
