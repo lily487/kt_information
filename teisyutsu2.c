@@ -100,10 +100,10 @@ int main(void)
     fclose(fp1);
 
     /* ================= メディア情報 ================= */
-    fp2 = fopen("kaeruTV.csv", "r");
+    fp2 = fopen("kaeruTV2026.csv", "r");
     if (!fp2)
     {
-        printf("can't open kaeruTV.csv\n");
+        printf("can't open kaeruTV2026.csv\n");
         exit(1);
     }
 
