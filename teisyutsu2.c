@@ -169,15 +169,6 @@ int main(void)
         found_any = 1;
     }
 
-    if (localTime->tm_wday == 1)
-    {
-        write_tweet(fp4,
-            "【メディア】≪レギュラー≫\n"
-            "コント･デ･ンガナ\n"
-            "@ABCテレビ\n24:00-24:30\n");
-        found_any = 1;
-    }
-
     /* ================= その他 ================= */
     fp3 = fopen("other.csv", "r");
     if (!fp3)
