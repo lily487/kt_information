@@ -6,7 +6,7 @@ import tweepy
 # 設定
 # ==============================
 FILE_PATH = "info_tweet.txt"
-MAX_LEN = 140   # 280にしたければ変更
+MAX_LEN = 140   # 280にしたければ 280 に変更
 
 # ==============================
 # 文字コード安全読み込み
@@ -25,31 +25,38 @@ def read_text_safely(path):
     sys.exit(1)
 
 # ==============================
-# Twitter認証
+# Twitter 認証（OAuth1）
 # ==============================
 def twitter_auth():
-    try:
-        auth = tweepy.OAuth1UserHandler(
-            os.environ["API_KEY"],
-            os.environ["API_SECRET"],
-            os.environ["ACCESS_TOKEN"],
-            os.environ["ACCESS_SECRET"],
-        )
-        return tweepy.API(auth)
-    except KeyError as e:
-        print(f"❌ 環境変数が不足しています: {e}")
+    required_envs = [
+        "APIKEY",
+        "APIKEYSECRET",
+        "ACCESSTOKEN",
+        "ACCESSTOKENSECRET",
+    ]
+
+    missing = [k for k in required_envs if not os.getenv(k)]
+    if missing:
+        print("❌ 環境変数が不足しています:", ", ".join(missing))
         sys.exit(1)
+
+    auth = tweepy.OAuth1UserHandler(
+        os.getenv("APIKEY"),
+        os.getenv("APIKEYSECRET"),
+        os.getenv("ACCESSTOKEN"),
+        os.getenv("ACCESSTOKENSECRET"),
+    )
+    return tweepy.API(auth)
 
 # ==============================
 # メイン処理
 # ==============================
 def main():
-    api = twitter_auth()
-
     if not os.path.exists(FILE_PATH):
         print("❌ info_tweet.txt が見つかりません")
         sys.exit(1)
 
+    api = twitter_auth()
     text = read_text_safely(FILE_PATH)
 
     parts = [p.strip() for p in text.split("---") if p.strip()]
@@ -58,6 +65,7 @@ def main():
     current = ""
 
     for part in parts:
+        # 単体で制限超えた場合は強制分割
         if len(part) > MAX_LEN:
             if current:
                 tweets.append(current)
@@ -65,7 +73,7 @@ def main():
 
             buf = ""
             for ch in part:
-                if len(buf) + 1 > MAX_LEN:
+                if len(buf) >= MAX_LEN:
                     tweets.append(buf)
                     buf = ""
                 buf += ch
@@ -75,8 +83,8 @@ def main():
 
         if not current:
             current = part
-        elif len(current) + 1 + len(part) <= MAX_LEN:
-            current += "\n" + part
+        elif len(current) + 2 + len(part) <= MAX_LEN:
+            current += "\n\n" + part
         else:
             tweets.append(current)
             current = part
@@ -85,13 +93,24 @@ def main():
         tweets.append(current)
 
     # ==============================
-    # ツイート実行
+    # ツイート送信（スレッド）
     # ==============================
+    previous_id = None
+
     for i, tweet in enumerate(tweets, 1):
         print(f"🐦 Tweet {i}/{len(tweets)}")
-        api.update_status(tweet)
+        if previous_id:
+            res = api.update_status(
+                status=tweet,
+                in_reply_to_status_id=previous_id,
+                auto_populate_reply_metadata=True
+            )
+        else:
+            res = api.update_status(status=tweet)
 
-    print("✅ 全ツイート完了")
+        previous_id = res.id
+
+    print("🎉 全ツイート完了")
 
 if __name__ == "__main__":
     main()
