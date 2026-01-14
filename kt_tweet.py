@@ -1,115 +1,97 @@
-import tweepy
 import os
 import sys
+import tweepy
 
-# ===== Twitter API（GitHub Secrets / ローカルでは None）=====
-API_KEY = os.getenv("APIKEY")
-API_SECRET = os.getenv("APIKEYSECRET")
-ACCESS_TOKEN = os.getenv("ACCESSTOKEN")
-ACCESS_SECRET = os.getenv("ACCESSTOKENSECRET")
+# ==============================
+# 設定
+# ==============================
+FILE_PATH = "info_tweet.txt"
+MAX_LEN = 140   # 280にしたければ変更
 
-print("DEBUG ENV:",
-      API_KEY is not None,
-      API_SECRET is not None,
-      ACCESS_TOKEN is not None,
-      ACCESS_SECRET is not None)
+# ==============================
+# 文字コード安全読み込み
+# ==============================
+def read_text_safely(path):
+    for enc in ("utf-8", "utf-8-sig", "cp932"):
+        try:
+            with open(path, "r", encoding=enc) as f:
+                text = f.read()
+            print(f"✅ info_tweet.txt read with encoding: {enc}")
+            return text
+        except UnicodeDecodeError:
+            continue
 
-# ===== info_tweet.txt 読み込み（UTF-8 固定）=====
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FILE_PATH = os.path.join(BASE_DIR, "info_tweet.txt")
-
-if not os.path.exists(FILE_PATH):
-    print("❌ file not found:", FILE_PATH)
+    print("❌ info_tweet.txt をどの文字コードでも読めませんでした")
     sys.exit(1)
 
-try:
-    with open(FILE_PATH, "r", encoding="utf-8") as f:
-        parts = f.read().split("---")
-except UnicodeDecodeError as e:
-    print("❌ Encoding error while reading info_tweet.txt")
-    print(e)
-    sys.exit(1)
-
-# ===== ツイート組み立て =====
-final_tweets = []
-current_block = ""
-
-for part in parts:
-    part = part.strip()
-    if not part:
-        continue
-
-    block = part
-
-    # 単体で140字超えた場合（保険）
-    if len(block) > 140:
-        if current_block:
-            final_tweets.append(current_block)
-            current_block = ""
-
-        for i in range(0, len(block), 140):
-            final_tweets.append(block[i:i+140])
-        continue
-
-    if not current_block:
-        current_block = block
-    elif len(current_block) + len(block) + 2 <= 140:
-        # ライブ間は必ず1行空ける
-        current_block += "\n\n" + block
-    else:
-        final_tweets.append(current_block)
-        current_block = block
-
-if current_block:
-    final_tweets.append(current_block)
-
-# ===== プレビュー表示 =====
-print("\n==============================")
-print("  GENERATED TWEETS (PREVIEW)")
-print("==============================\n")
-
-for i, tweet in enumerate(final_tweets, start=1):
-    print(f"--- TWEET {i} ----------------")
-    print(tweet)
-    print(f"\n[LENGTH: {len(tweet)}]")
-    print("------------------------------\n")
-
-print(f"Total tweets: {len(final_tweets)}")
-print("↑ この内容が実際に投稿される想定です\n")
-
-# ===== APIキーが無い場合はここで終了（ローカル確認用）=====
-if not all([API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET]):
-    print("⚠ APIキーが未設定のため、ツイート送信はスキップします")
-    sys.exit(0)
-
-# ===== ツイート投稿 =====
-client = tweepy.Client(
-    consumer_key=API_KEY,
-    consumer_secret=API_SECRET,
-    access_token=ACCESS_TOKEN,
-    access_token_secret=ACCESS_SECRET
-)
-
-previous_tweet_id = None
-
-for i, tweet_text in enumerate(final_tweets, start=1):
+# ==============================
+# Twitter認証
+# ==============================
+def twitter_auth():
     try:
-        if previous_tweet_id:
-            response = client.create_tweet(
-                text=tweet_text,
-                in_reply_to_tweet_id=previous_tweet_id
-            )
-        else:
-            response = client.create_tweet(text=tweet_text)
-
-        if response.data is None:
-            raise Exception(f"No response data: {response}")
-
-        previous_tweet_id = response.data["id"]
-        print(f"✅ Sent tweet {i}")
-
-    except Exception as e:
-        print(f"❌ Error at tweet {i}: {e}")
+        auth = tweepy.OAuth1UserHandler(
+            os.environ["API_KEY"],
+            os.environ["API_SECRET"],
+            os.environ["ACCESS_TOKEN"],
+            os.environ["ACCESS_SECRET"],
+        )
+        return tweepy.API(auth)
+    except KeyError as e:
+        print(f"❌ 環境変数が不足しています: {e}")
         sys.exit(1)
 
-print("🎉 All tweets sent successfully!")
+# ==============================
+# メイン処理
+# ==============================
+def main():
+    api = twitter_auth()
+
+    if not os.path.exists(FILE_PATH):
+        print("❌ info_tweet.txt が見つかりません")
+        sys.exit(1)
+
+    text = read_text_safely(FILE_PATH)
+
+    parts = [p.strip() for p in text.split("---") if p.strip()]
+
+    tweets = []
+    current = ""
+
+    for part in parts:
+        if len(part) > MAX_LEN:
+            if current:
+                tweets.append(current)
+                current = ""
+
+            buf = ""
+            for ch in part:
+                if len(buf) + 1 > MAX_LEN:
+                    tweets.append(buf)
+                    buf = ""
+                buf += ch
+            if buf:
+                tweets.append(buf)
+            continue
+
+        if not current:
+            current = part
+        elif len(current) + 1 + len(part) <= MAX_LEN:
+            current += "\n" + part
+        else:
+            tweets.append(current)
+            current = part
+
+    if current:
+        tweets.append(current)
+
+    # ==============================
+    # ツイート実行
+    # ==============================
+    for i, tweet in enumerate(tweets, 1):
+        print(f"🐦 Tweet {i}/{len(tweets)}")
+        api.update_status(tweet)
+
+    print("✅ 全ツイート完了")
+
+if __name__ == "__main__":
+    main()
